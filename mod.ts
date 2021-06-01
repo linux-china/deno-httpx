@@ -38,6 +38,13 @@ export class HttpTarget {
         return this.method === "" && this.url === "";
     }
 
+    isMatch(word: string): boolean {
+        if (this.comment && this.comment.indexOf(word) >= 0) {
+            return true;
+        }
+        return this.url.indexOf(word) >= 0;
+    }
+
     clean() {
         if (typeof this.body === "string") {
             if (this.body && this.body.endsWith("\r\n")) {
