@@ -150,4 +150,17 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
     return targets;
 }
 
+export async function findHttpTarget(httpFile: string, word?: string): Promise<HttpTarget | null> {
+    let targets = await parseTargets(httpFile);
+    if (word === undefined || word === "") {
+        return targets[0];
+    }
+    for (const target of targets) {
+        if (target.isMatch(word)) {
+            return target;
+        }
+    }
+    return null;
+}
+
 
