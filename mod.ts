@@ -1,6 +1,10 @@
 /// <reference lib="esnext" />
-import {readLines} from "https://deno.land/std/io/bufio.ts";
+import {readLines} from "https://deno.land/std@0.97.0/io/bufio.ts";
+import * as fs from "https://deno.land/std@0.97.0/fs/mod.ts";
+import {v4} from "https://deno.land/std@0.97.0/uuid/mod.ts";
 
+
+const httpClientEnvFile = "http-client.env.json";
 
 export class HttpTarget {
     comment?: string
@@ -53,13 +57,44 @@ export class HttpTarget {
         }
     }
 
-    replace(env?: { [name: string]: string }) {
+    replace(env?: string) {
+        // replace {{variable}}
+        if (env && fs.existsSync(httpClientEnvFile)) {
+            let fileText = Deno.readTextFileSync(httpClientEnvFile);
+            let json: any = JSON.parse(fileText);
+            if (json[env]) {
+                let context = json[env];
+                context['$uuid'] = v4.generate();
+                context['$timestamp'] = Date.now();
+                context['$randomInt'] = Math.floor(Math.random() * 1001); // random int 0 - 1000
+                this.url = replaceVariables(this.url, context);
+                if (typeof this.body === "string") {
+                    this.body = replaceVariables(this.body, context);
+                }
+                if (this.headers) {
+                    this.headers.forEach((value, key, parent) => {
+                        parent.set(key, replaceVariables(value, context));
+                        if (key.toLocaleLowerCase() === "authorization" && value.startsWith("Basic ")) {
+                            // todo ":" to concat to user name and password
+                        }
+                    })
+                }
+            }
+        }
         if (typeof this.body === "string") {
             if (this.body.startsWith("< ")) { // import content from file
                 this.body = Deno.readFileSync(this.body.trim().substr(2));
             }
         }
+
     }
+}
+
+function replaceVariables(text: string, context: { [name: string]: string }): string {
+    if (text.indexOf("{{") >= 0) {
+        // todo variable replace
+    }
+    return text;
 }
 
 export function runTarget(target: HttpTarget) {
