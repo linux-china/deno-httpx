@@ -63,6 +63,9 @@ export class HttpTarget {
 }
 
 export function runTarget(target: HttpTarget) {
+    if (target.comment) {
+        console.log(`### ${target.comment}`)
+    }
     console.log(`${target.method} ${target.url}`)
     fetch(target.url, {
         method: target.method, // or 'PUT'
