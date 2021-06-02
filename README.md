@@ -13,7 +13,7 @@ http file used by JetBrains IDE and VS Code REST Client for editor http client, 
 ### Install httpx
 
 ```
-deno install -q --location https://denopkg.com//linux-china/deno-httpx --allow-net --allow-read  --unstable -r -f -n httpx https://denopkg.com/linux-china/deno-httpx/cli.ts
+deno install -q --location https://denopkg.com//linux-china/deno-httpx --allow-net --allow-read --allow-env --unstable -r -f -n httpx https://denopkg.com/linux-china/deno-httpx/cli.ts
 ```
 
 ### index.http file
@@ -25,7 +25,7 @@ Create 'index.http' file with following code:
 GET https://httpbin.org/ip
 
 > {%
-    client.log("your ip: "+response.body['origin']);
+    client.log("your ip: " + response.body['origin']);
 %}
 ```
 
