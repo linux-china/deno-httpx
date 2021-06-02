@@ -231,18 +231,16 @@ function buildHttpClient(httpTarget: HttpTarget): HttpClient {
     return {
         global: {
             clear(varName: string): void {
-
+                localStorage.removeItem(varName);
             }, clearAll(): void {
-
+                localStorage.clear();
             }, get(varName: string): string {
-                return "";
+                return localStorage.getItem(varName) ?? "";
             }, isEmpty(): boolean {
-
-                return false;
+                return localStorage.length == 0;
             }, set(varName: string, varValue: string): void {
-
+                localStorage.setItem(varName, varValue)
             }
-
         },
         test(testName: string, func: Function) {
             console.log(`===========test: ${testName}================`);
