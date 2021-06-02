@@ -1,5 +1,5 @@
 /// <reference lib="esnext" />
-import {readLines} from "https://deno.land/std@0.97.0/io/bufio.ts";
+import {readLines, StringReader} from "https://deno.land/std@0.97.0/io/mod.ts";
 import * as fs from "https://deno.land/std@0.97.0/fs/mod.ts";
 import {v4} from "https://deno.land/std@0.97.0/uuid/mod.ts";
 import {HttpClient, HttpResponse} from "./http-client.ts";
@@ -9,6 +9,7 @@ import * as base64 from "https://deno.land/std@0.97.0/encoding/base64.ts";
 const textEncoder = new TextEncoder();
 
 const httpClientEnvFile = "http-client.env.json";
+const httpClientPrivateEnvFile = "http-client.private.env.json";
 
 export class HttpTarget {
     comment?: string
@@ -61,45 +62,15 @@ export class HttpTarget {
         }
     }
 
-    replace(env?: string) {
-        // replace {{variable}}
-        if (env && fs.existsSync(httpClientEnvFile)) {
-            let fileText = Deno.readTextFileSync(httpClientEnvFile);
-            let json: any = JSON.parse(fileText);
-            if (json[env]) {
-                let context = json[env];
-                context['$uuid'] = v4.generate();
-                context['$timestamp'] = Date.now();
-                context['$randomInt'] = Math.floor(Math.random() * 1001); // random int 0 - 1000
-                this.url = replaceVariables(this.url, context);
-                if (typeof this.body === "string") {
-                    this.body = replaceVariables(this.body, context);
-                }
-                if (this.headers) {
-                    this.headers.forEach((value, key, parent) => {
-                        parent.set(key, replaceVariables(value, context));
-                        if (key.toLocaleLowerCase() === "authorization" && value.startsWith("Basic ")) {
-                            // todo ":" to concat to user name and password
-                        }
-                    })
-                }
-            }
-        }
+    replace() {
         if (typeof this.body === "string") {
             if (this.body.startsWith("< ")) { // import content from file
                 this.body = Deno.readFileSync(this.body.trim().substr(2));
             }
         }
-
     }
 }
 
-function replaceVariables(text: string, context: { [name: string]: string }): string {
-    if (text.indexOf("{{") >= 0) {
-        // todo variable replace
-    }
-    return text;
-}
 
 export function runTarget(target: HttpTarget) {
     if (target.comment) {
@@ -160,10 +131,10 @@ export function runTarget(target: HttpTarget) {
 }
 
 export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
-    const file = await Deno.open(filePath);
+    const cleanContent = await getCleanHttpFile(filePath);
     let targets: HttpTarget[] = [];
     let httpTarget = new HttpTarget("", "");
-    for await (const l of readLines(file)) {
+    for await (const l of readLines(new StringReader(cleanContent))) {
         const line = l.trimEnd() as string;
         if (line === "" && httpTarget.isEmpty()) { // ignore empty line before http target
 
@@ -225,6 +196,63 @@ export async function findHttpTarget(httpFile: string, word?: string): Promise<H
         }
     }
     return null;
+}
+
+
+/**
+ * replace variables with context
+ * @param text text content
+ * @param context context
+ */
+function replaceVariables(text: string, context: { [name: string]: string }): string {
+    let newText = text;
+    while (newText.indexOf("{{") >= 0) {
+        let start = newText.indexOf("{{");
+        let end = newText.indexOf("}}");
+        if (end < start) {
+            return newText;
+        }
+        let name = newText.substring(start + 2, end).trim();
+        let value = context[name] ?? "";
+        newText = newText.substring(0, start) + value + newText.substring(end + 2);
+    }
+    return newText;
+}
+
+/**
+ * get clean http file with variables replaced
+ * @param httpFile http file name
+ */
+async function getCleanHttpFile(httpFile: string): Promise<string> {
+    let env = Deno.env.get("HTTP_CLIENT_ENV");
+    let context: { [name: string]: string } = {}
+    // load http-client.env.json
+    if (fs.existsSync(httpClientEnvFile)) {
+        let fileText = Deno.readTextFileSync(httpClientEnvFile);
+        let json: any = JSON.parse(fileText);
+        let keys = Object.keys(json);
+        if (keys.length > 1) {
+            if (env && json[env]) {
+                context = json[env];
+            } else {
+                env = keys[0];
+                context = json[env]
+            }
+        } else if (keys.length == 1) {
+            env = keys[0];
+            context = json[env]
+        }
+    }
+    // load http-client.private.env.json
+    if (fs.existsSync(httpClientPrivateEnvFile) && env !== undefined) {
+        let fileText = Deno.readTextFileSync(httpClientPrivateEnvFile);
+        let json: any = JSON.parse(fileText);
+        if (json[env]) {
+            Object.assign(context, json[env]);
+        }
+    }
+    const fileContent = await Deno.readTextFile(httpFile);
+    return replaceVariables(fileContent, context);
 }
 
 function buildHttpClient(httpTarget: HttpTarget): HttpClient {
