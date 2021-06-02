@@ -3,6 +3,11 @@ httpx: CLI for http file
 
 http file used by JetBrains IDE and VS Code REST Client for editor http client, and httpx is CLI to execute the http request in http file.
 
+# Features
+
+* Execute requests in http file
+* Javascript validation support: esnext support
+
 # Get started
 
 ### Install httpx
