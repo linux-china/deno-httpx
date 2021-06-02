@@ -101,7 +101,8 @@ export function runTarget(target: HttpTarget) {
     if (target.comment) {
         console.log(`### ${target.comment}`)
     }
-    console.log(`${target.method} ${target.url}`)
+    console.log(`${target.method} ${target.url}`);
+    let checkerContext: { [name: string]: any } = {}
     fetch(target.url, {
         method: target.method, // or 'PUT'
         headers: target.headers,
@@ -123,6 +124,10 @@ export function runTarget(target: HttpTarget) {
         if (!body) {
             body = res.arrayBuffer();
         }
+        if (target.checker) {
+            checkerContext['client'] = "httpClient";
+            checkerContext['response'] = "response"
+        }
         return body;
     }).then(body => {
         console.log("")
@@ -133,6 +138,12 @@ export function runTarget(target: HttpTarget) {
             console.log(JSON.stringify(body, null, 2));
         } else {
             console.log(new Uint8Array(body));
+        }
+        return body;
+    }).then(body => {
+        // todo execute the checker
+        if (target.checker) {
+            console.log("client:", checkerContext['client'])
         }
     }).catch(error => console.error(error))
 }
