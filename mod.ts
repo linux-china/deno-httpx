@@ -186,7 +186,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
             && (line.indexOf("  /") >= 0 || line.indexOf("  ?") >= 0 || line.indexOf("  &") >= 0)
             && httpTarget.headers === undefined) { // long request url into several lines
             httpTarget.url = httpTarget.url + line.trim();
-        } else if (line.indexOf(":") > 0 && httpTarget.body === undefined) { // headers
+        } else if (line.indexOf(":") > 0 && httpTarget.body === undefined && httpTarget.checker === undefined) { // http headers
             let parts = line.split(":", 2);
             httpTarget.addHeader(parts[0].trim(), parts[1].trim());
         } else {
