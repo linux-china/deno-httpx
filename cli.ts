@@ -93,7 +93,6 @@ const command = new Command()
         // set http client env
         let env = options['env'];
         if (env) {
-            console.log("env:", env);
             Deno.env.set("HTTP_CLIENT_ENV", env);
         }
         if (typeof script === 'undefined') {
