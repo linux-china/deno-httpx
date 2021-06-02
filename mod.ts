@@ -130,11 +130,14 @@ export function runTarget(target: HttpTarget) {
         }
         if (target.checker) {
             checkerContext['client'] = buildHttpClient(target);
-            checkerContext['response'] = buildHttpResponse(res, body);
+            checkerContext['response'] = buildHttpResponse(res);
         }
         return body;
     }).then(body => {
         console.log("");
+        if (target.checker) {
+            checkerContext['response'].body = body;
+        }
         if (typeof body === 'string') {
             console.log(body);
         } else if (typeof body === 'object') {
@@ -252,9 +255,9 @@ function buildHttpClient(httpTarget: HttpTarget): HttpClient {
     }
 }
 
-function buildHttpResponse(res: Response, body: string | object): HttpResponse {
+function buildHttpResponse(res: Response): HttpResponse {
     return {
-        body: body,
+        body: "",
         contentType: {
             mimeType: "",
             charset: "utf-8"
