@@ -2,7 +2,11 @@
 import {readLines} from "https://deno.land/std@0.97.0/io/bufio.ts";
 import * as fs from "https://deno.land/std@0.97.0/fs/mod.ts";
 import {v4} from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import {HttpClient, HttpResponse} from "./http-client.ts";
+import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts";
+import * as base64 from "https://deno.land/std@0.97.0/encoding/base64.ts";
 
+const textEncoder = new TextEncoder();
 
 const httpClientEnvFile = "http-client.env.json";
 
@@ -125,14 +129,14 @@ export function runTarget(target: HttpTarget) {
             body = res.arrayBuffer();
         }
         if (target.checker) {
-            checkerContext['client'] = "httpClient";
-            checkerContext['response'] = "response"
+            checkerContext['client'] = buildHttpClient(target);
+            checkerContext['response'] = buildHttpResponse(res, body);
         }
         return body;
     }).then(body => {
-        console.log("")
+        console.log("");
         if (typeof body === 'string') {
-            console.log(body)
+            console.log(body);
         } else if (typeof body === 'object') {
             // json reformat
             console.log(JSON.stringify(body, null, 2));
@@ -141,9 +145,13 @@ export function runTarget(target: HttpTarget) {
         }
         return body;
     }).then(body => {
-        // todo execute the checker
         if (target.checker) {
-            console.log("client:", checkerContext['client'])
+            console.log("=============tests==============")
+            let javaScriptCode = "export default function validate(client,response) {" + target.checker + "};";
+            import("data:application/javascript;charset=utf-8;base64," + base64.encode(textEncoder.encode(javaScriptCode)))
+                .then(module => {
+                    module['default'](checkerContext['client'], checkerContext['response'])
+                });
         }
     }).catch(error => console.error(error))
 }
@@ -212,4 +220,54 @@ export async function findHttpTarget(httpFile: string, word?: string): Promise<H
     return null;
 }
 
+function buildHttpClient(httpTarget: HttpTarget): HttpClient {
+    return {
+        global: {
+            clear(varName: string): void {
+
+            }, clearAll(): void {
+
+            }, get(varName: string): string {
+                return "";
+            }, isEmpty(): boolean {
+
+                return false;
+            }, set(varName: string, varValue: string): void {
+
+            }
+
+        },
+        test(testName: string, func: Function) {
+            console.log(`===========test: ${testName}================`);
+            func();
+        }, assert(condition: boolean, message?: string): void {
+            assertEquals(condition, true, message);
+        }, log(text: string): void {
+            console.log(text);
+        }
+    }
+}
+
+function buildHttpResponse(res: Response, body: string | object): HttpResponse {
+    return {
+        body: body,
+        contentType: {
+            mimeType: "",
+            charset: "utf-8"
+        },
+        headers: {
+            valueOf(headerName: string): string | null {
+                return res.headers.get(headerName);
+            }, valuesOf(headerName: string): string[] {
+                let values: string[] = [];
+                let value = res.headers.get(headerName);
+                if (value) {
+                    values.push(value);
+                }
+                return values;
+            }
+        },
+        status: res.status
+    };
+}
 
