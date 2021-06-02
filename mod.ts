@@ -161,7 +161,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
     let targets: HttpTarget[] = [];
     let httpTarget = new HttpTarget("", "");
     for await (const l of readLines(file)) {
-        const line = l.trim() as string;
+        const line = l.trimEnd() as string;
         if (line === "" && httpTarget.isEmpty()) { // ignore empty line before http target
 
         } else if (line.startsWith("###")) { // separator
@@ -182,6 +182,10 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
             let parts = line.split(" ", 3); // format as 'POST URL HTTP/1.1'
             httpTarget.method = parts[0];
             httpTarget.url = parts[1].trim();
+        } else if (line.startsWith("  ")
+            && (line.indexOf("  /") >= 0 || line.indexOf("  ?") >= 0 || line.indexOf("  &") >= 0)
+            && httpTarget.headers === undefined) { // long request url into several lines
+            httpTarget.url = httpTarget.url + line.trim();
         } else if (line.indexOf(":") > 0 && httpTarget.body === undefined) { // headers
             let parts = line.split(":", 2);
             httpTarget.addHeader(parts[0].trim(), parts[1].trim());
