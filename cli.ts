@@ -87,10 +87,15 @@ const command = new Command()
             await generateShellCompletion(options.completion);
         }
     })
-    .option("-p, --profile <profile:string>", "Profile name in http-client.env.json")
+    .option("-e, --env <env:string>", "env name in http-client.env.json")
     .arguments("[script:string] [args...:string]")
     .action(async (options: any, script: string | undefined, args: string[] | undefined) => {
-        // run first target from index.http
+        // set http client env
+        let env = options['env'];
+        if (env) {
+            console.log("env:", env);
+            Deno.env.set("HTTP_CLIENT_ENV", env);
+        }
         if (typeof script === 'undefined') {
             const httpFile = detectHttpFile();
             if (httpFile) {
