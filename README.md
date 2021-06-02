@@ -8,7 +8,7 @@ http file used by JetBrains IDE and VS Code REST Client for editor http client, 
 ### Install httpx
 
 ```
-deno install -q -A --unstable -r -f -n httpx https://denopkg.com/linux-china/deno-httpx/cli.ts
+deno install -q --location https://denopkg.com//linux-china/deno-httpx --allow-net --allow-read  --unstable -r -f -n httpx https://denopkg.com/linux-china/deno-httpx/cli.ts
 ```
 
 ### index.http
@@ -26,7 +26,7 @@ GET https://httpbin.org/ip
 
 ### Execute http target
 
-Execute `httpx getInternetIp` on the terminal
+Execute `httpx index.http getInternetIp` on the terminal
 
 ![httpx cli](./docs/httpx-cli.png)
 
