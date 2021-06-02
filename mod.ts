@@ -54,7 +54,7 @@ export class HttpTarget {
         return this.url.indexOf(word) >= 0;
     }
 
-    clean() {
+    cleanBody() {
         if (typeof this.body === "string") {
             if (this.body && this.body.endsWith("\r\n")) {
                 this.body = this.body.substr(0, this.body.length - 2)
@@ -62,7 +62,7 @@ export class HttpTarget {
         }
     }
 
-    replace() {
+    prepareBody() {
         if (typeof this.body === "string") {
             if (this.body.startsWith("< ")) { // import content from file
                 this.body = Deno.readFileSync(this.body.trim().substr(2));
@@ -80,6 +80,7 @@ export function runTarget(target: HttpTarget) {
     console.log(`### ${target.comment ?? ""} ${env ?? ""}`)
     console.log(`${target.method} ${target.url}`);
     let checkerContext: { [name: string]: any } = {}
+    target.prepareBody();
     fetch(target.url, {
         method: target.method, // or 'PUT'
         headers: target.headers,
@@ -145,7 +146,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
             if (httpTarget.isEmpty()) {
                 httpTarget.comment = comment;
             } else {
-                httpTarget.clean();
+                httpTarget.cleanBody();
                 targets.push(httpTarget);
                 httpTarget = new HttpTarget("", "");
                 httpTarget.comment = comment;
