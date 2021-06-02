@@ -1,0 +1,28 @@
+// get ip
+GET https://httpbin.org/ip
+
+> {%
+    client.log("your ip: "+response.body['origin']);
+%}
+
+### get header
+GET https://httpbin.org/headers
+
+> {%
+    client.test("Request executed successfully", function () {
+        client.assert(response.status === 200, "Response status is not 200");
+    });
+%}
+
+### post
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "token": "my-secret-token"
+}
+
+> {%
+    client.global.set("auth_token", response.body.json.token);
+    client.log("auth_token"+client.global.get("auth_token"))
+%}
