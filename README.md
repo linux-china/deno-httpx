@@ -11,11 +11,11 @@ http file used by JetBrains IDE and VS Code REST Client for editor http client, 
 deno install -q --location https://denopkg.com//linux-china/deno-httpx --allow-net --allow-read  --unstable -r -f -n httpx https://denopkg.com/linux-china/deno-httpx/cli.ts
 ```
 
-### index.http
+### index.http file
 
-Create index.http file with following code:
+Create 'index.http' file with following code:
 
-```http request
+```
 ### getInternetIp
 GET https://httpbin.org/ip
 
