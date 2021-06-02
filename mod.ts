@@ -225,7 +225,10 @@ function replaceVariables(text: string, context: { [name: string]: string }): st
  */
 async function getCleanHttpFile(httpFile: string): Promise<string> {
     let env = Deno.env.get("HTTP_CLIENT_ENV");
-    let context: { [name: string]: string } = {}
+    let context: { [name: string]: any } = {}
+    context["$uuid"] = v4.generate();
+    context["$timestamp"] = Date.now();
+    context["$randomInt"] = Math.floor(Math.random() * 1001);
     // load http-client.env.json
     if (fs.existsSync(httpClientEnvFile)) {
         let fileText = Deno.readTextFileSync(httpClientEnvFile);
@@ -233,14 +236,11 @@ async function getCleanHttpFile(httpFile: string): Promise<string> {
         let keys = Object.keys(json);
         if (keys.length > 1) {
             if (env && json[env]) {
-                context = json[env];
-            } else {
-                env = keys[0];
-                context = json[env]
+                Object.assign(context, json[env]);
             }
-        } else if (keys.length == 1) {
+        } else if (keys.length == 1 && env === undefined) {
             env = keys[0];
-            context = json[env]
+            Object.assign(context, json[env]);
         }
     }
     // load http-client.private.env.json
@@ -251,6 +251,7 @@ async function getCleanHttpFile(httpFile: string): Promise<string> {
             Object.assign(context, json[env]);
         }
     }
+    console.log("context: ", context);
     const fileContent = await Deno.readTextFile(httpFile);
     return replaceVariables(fileContent, context);
 }
