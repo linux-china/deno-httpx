@@ -7,6 +7,7 @@ import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts";
 import * as base64 from "https://deno.land/std@0.97.0/encoding/base64.ts";
 
 const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 
 const httpClientEnvFile = "http-client.env.json";
 const httpClientPrivateEnvFile = "http-client.private.env.json";
@@ -64,8 +65,21 @@ export class HttpTarget {
 
     prepareBody() {
         if (typeof this.body === "string") {
+            // load body from file
             if (this.body.startsWith("< ")) { // import content from file
                 this.body = Deno.readFileSync(this.body.trim().substr(2));
+            }
+        }
+        // basic Authorization conversation
+        if (this.headers != null) {
+            let authorization = this.headers.get("Authorization");
+            if (authorization && authorization.startsWith("Basic ")) {
+                let usernameAndPassword = authorization.substring(6).trim();
+                if (usernameAndPassword.indexOf(" ") > 0) {
+                    let parts = usernameAndPassword.split(" ", 2);
+                    let encodedText = base64.encode(parts[0] + ":" + parts[1].trim());
+                    this.headers.set("Authorization", "Basic " + encodedText);
+                }
             }
         }
     }
@@ -79,6 +93,11 @@ export function runTarget(target: HttpTarget) {
     }
     console.log(`### ${target.comment ?? ""} ${env ?? ""}`)
     console.log(`${target.method} ${target.url}`);
+    if (target.headers) {
+        target.headers.forEach((value, key) => {
+            console.log(`${key}: ${value}`);
+        })
+    }
     let checkerContext: { [name: string]: any } = {}
     target.prepareBody();
     fetch(target.url, {
@@ -86,7 +105,7 @@ export function runTarget(target: HttpTarget) {
         headers: target.headers,
         body: target.body
     }).then(res => {
-        console.log("")
+        console.log("\r\n=========Response=============")
         res.headers.forEach((value, key) => {
             console.log(`${key}: ${value}`);
         })
