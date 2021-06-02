@@ -73,9 +73,11 @@ export class HttpTarget {
 
 
 export function runTarget(target: HttpTarget) {
-    if (target.comment) {
-        console.log(`### ${target.comment}`)
+    let env = Deno.env.get("HTTP_CLIENT_ENV");
+    if (env) {
+        env = " -- " + env;
     }
+    console.log(`### ${target.comment ?? ""} ${env ?? ""}`)
     console.log(`${target.method} ${target.url}`);
     let checkerContext: { [name: string]: any } = {}
     fetch(target.url, {
@@ -251,7 +253,6 @@ async function getCleanHttpFile(httpFile: string): Promise<string> {
             Object.assign(context, json[env]);
         }
     }
-    console.log("context: ", context);
     const fileContent = await Deno.readTextFile(httpFile);
     return replaceVariables(fileContent, context);
 }
