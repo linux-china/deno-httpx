@@ -37,5 +37,6 @@ Execute `httpx index.http getInternetIp` on the terminal
 
 # References
 
+* HTTP Request in Editor Specification: https://github.com/JetBrains/http-request-in-editor-spec/blob/master/spec.md
 * HTTP client in IntelliJ IDEA code editor: https://www.jetbrains.com/help/idea/http-client-in-product-code-editor.html
 * VS Code REST Client extension: https://marketplace.visualstudio.com/items?itemName=humao.rest-client
