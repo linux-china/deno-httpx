@@ -16,7 +16,7 @@ export class HttpTarget {
     comment?: string
     method: string
     url: string
-    schema?: string
+    schema: string = "HTTP/1.1"
     headers?: Headers
     body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
     script?: string
@@ -66,10 +66,7 @@ export class HttpTarget {
 
     prepareBody() {
         if (!(this.url.startsWith("http://") || this.url.startsWith("https://"))) {
-            let httpSchema = "http://";
-            if (this.schema) {
-                httpSchema = this.schema.substring(0, this.schema.indexOf("/")) + "://";
-            }
+            let httpSchema = this.schema.substring(0, this.schema.indexOf("/")).toLocaleLowerCase() + "://";
             this.url = httpSchema + this.headers?.get("Host") + this.url;
         }
         if (typeof this.body === "string") {
@@ -117,6 +114,7 @@ export function runTarget(target: HttpTarget) {
         body: target.body
     }).then(res => {
         console.log("\r\n=========Response=============")
+        console.log(`${target.schema} ${res.status} ${res.ok ? 'OK' : 'ERROR'}`);
         res.headers.forEach((value, key) => {
             console.log(`${key}: ${value}`);
         })
@@ -153,7 +151,7 @@ export function runTarget(target: HttpTarget) {
         return body;
     }).then(body => {
         if (target.script) {
-            console.log("=============tests==============")
+            console.log("=============Tests==============")
             let javaScriptCode = "export default function validate(client,response) {" + target.script + "};";
             import("data:application/javascript;charset=utf-8;base64," + base64.encode(textEncoder.encode(javaScriptCode)))
                 .then(module => {
