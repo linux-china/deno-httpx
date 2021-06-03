@@ -6,6 +6,7 @@ import {HttpClient, HttpResponse} from "./http-client.ts";
 import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts";
 import * as base64 from "https://deno.land/std@0.97.0/encoding/base64.ts";
 
+const LINE_TERMINATOR = "\r\n";
 const textEncoder = new TextEncoder();
 
 const httpClientEnvFile = "http-client.env.json";
@@ -18,7 +19,7 @@ export class HttpTarget {
     schema?: string
     headers?: Headers
     body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
-    checker?: string
+    script?: string
 
     constructor(method: string, url: string) {
         this.method = method;
@@ -32,15 +33,15 @@ export class HttpTarget {
         this.headers.set(name, value);
     }
 
-    addCheckerLine(line: string) {
-        this.checker = this.checker + "\r\n" + line;
+    addScriptLine(line: string) {
+        this.script = this.script + LINE_TERMINATOR + line;
     }
 
     addBodyLine(line: string) {
         if (!this.body) {
             this.body = line;
         } else {
-            this.body = this.body + "\r\n" + line;
+            this.body = this.body + LINE_TERMINATOR + line;
         }
     }
 
@@ -57,7 +58,7 @@ export class HttpTarget {
 
     cleanBody() {
         if (typeof this.body === "string") {
-            if (this.body && this.body.endsWith("\r\n")) {
+            if (this.body && this.body.endsWith(LINE_TERMINATOR)) {
                 this.body = this.body.substr(0, this.body.length - 2)
             }
         }
@@ -74,8 +75,11 @@ export class HttpTarget {
         if (typeof this.body === "string") {
             // load body from file
             if (this.body.startsWith("< ")) { // import content from file
-                this.body = Deno.readFileSync(this.body.trim().substr(2));
+                this.body = Deno.readFileSync(this.body.substr(2).trim());
             }
+        }
+        if (this.script && this.script.startsWith("> ")) {
+            this.script = Deno.readTextFileSync(this.script.substr(2).trim());
         }
         // basic Authorization conversation
         if (this.headers != null) {
@@ -106,7 +110,7 @@ export function runTarget(target: HttpTarget) {
             console.log(`${key}: ${value}`);
         })
     }
-    let checkerContext: { [name: string]: any } = {}
+    let scriptContext: { [name: string]: any } = {}
     fetch(target.url, {
         method: target.method, // or 'PUT'
         headers: target.headers,
@@ -128,15 +132,15 @@ export function runTarget(target: HttpTarget) {
         if (!body) {
             body = res.arrayBuffer();
         }
-        if (target.checker) {
-            checkerContext['client'] = buildHttpClient(target);
-            checkerContext['response'] = buildHttpResponse(res);
+        if (target.script) {
+            scriptContext['client'] = buildHttpClient(target);
+            scriptContext['response'] = buildHttpResponse(res);
         }
         return body;
     }).then(body => {
         console.log("");
-        if (target.checker) {
-            checkerContext['response'].body = body;
+        if (target.script) {
+            scriptContext['response'].body = body;
         }
         if (typeof body === 'string') {
             console.log(body);
@@ -148,12 +152,12 @@ export function runTarget(target: HttpTarget) {
         }
         return body;
     }).then(body => {
-        if (target.checker) {
+        if (target.script) {
             console.log("=============tests==============")
-            let javaScriptCode = "export default function validate(client,response) {" + target.checker + "};";
+            let javaScriptCode = "export default function validate(client,response) {" + target.script + "};";
             import("data:application/javascript;charset=utf-8;base64," + base64.encode(textEncoder.encode(javaScriptCode)))
                 .then(module => {
-                    module['default'](checkerContext['client'], checkerContext['response'])
+                    module['default'](scriptContext['client'], scriptContext['response'])
                 });
         }
     }).catch(error => console.error(error))
@@ -193,24 +197,26 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
             && (line.indexOf("  /") >= 0 || line.indexOf("  ?") >= 0 || line.indexOf("  &") >= 0)
             && httpTarget.headers === undefined) { // long request url into several lines
             httpTarget.url = httpTarget.url + line.trim();
-        } else if (line.indexOf(":") > 0 && httpTarget.body === undefined && httpTarget.checker === undefined) { // http headers
+        } else if (line.indexOf(":") > 0 && httpTarget.body === undefined && httpTarget.script === undefined) { // http headers
             let parts = line.split(":", 2);
             httpTarget.addHeader(parts[0].trim(), parts[1].trim());
         } else if (line.startsWith("<> ")) { //response-ref
 
         } else {
             if (!(line === "" && httpTarget.body === undefined)) {
-                if (line.startsWith("> {%")) { // indicate checker
+                if (line.startsWith("> {%")) { // indicate script
                     let code = line.substring("> {%".length).trim();
                     if (code.endsWith("%}")) {
                         code = code.substring(0, code.length - 2);
                     }
-                    httpTarget.checker = code;
-                } else if (line.startsWith("%}")) { // end of checker
+                    httpTarget.script = code;
+                } else if (line.startsWith("%}")) { // end of script
 
+                } else if (line.startsWith("> ")) { // insert the script file
+                    httpTarget.script = line;
                 } else {
-                    if (httpTarget.checker !== undefined) { //add checker line
-                        httpTarget.addCheckerLine(l);
+                    if (httpTarget.script !== undefined) { //add script line
+                        httpTarget.addScriptLine(l);
                     } else { // add body line
                         httpTarget.addBodyLine(l);
                     }
