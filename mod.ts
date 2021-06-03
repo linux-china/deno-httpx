@@ -7,7 +7,6 @@ import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts";
 import * as base64 from "https://deno.land/std@0.97.0/encoding/base64.ts";
 
 const textEncoder = new TextEncoder();
-const textDecoder = new TextDecoder();
 
 const httpClientEnvFile = "http-client.env.json";
 const httpClientPrivateEnvFile = "http-client.private.env.json";
@@ -16,6 +15,7 @@ export class HttpTarget {
     comment?: string
     method: string
     url: string
+    schema?: string
     headers?: Headers
     body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
     checker?: string
@@ -64,6 +64,13 @@ export class HttpTarget {
     }
 
     prepareBody() {
+        if (!(this.url.startsWith("http://") || this.url.startsWith("https://"))) {
+            let httpSchema = "http://";
+            if (this.schema) {
+                httpSchema = this.schema.substring(0, this.schema.indexOf("/")) + "://";
+            }
+            this.url = httpSchema + this.headers?.get("Host") + this.url;
+        }
         if (typeof this.body === "string") {
             // load body from file
             if (this.body.startsWith("< ")) { // import content from file
@@ -87,6 +94,7 @@ export class HttpTarget {
 
 
 export function runTarget(target: HttpTarget) {
+    target.prepareBody(); // prepare the body
     let env = Deno.env.get("HTTP_CLIENT_ENV");
     if (env) {
         env = " -- " + env;
@@ -99,7 +107,6 @@ export function runTarget(target: HttpTarget) {
         })
     }
     let checkerContext: { [name: string]: any } = {}
-    target.prepareBody();
     fetch(target.url, {
         method: target.method, // or 'PUT'
         headers: target.headers,
@@ -174,10 +181,14 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
             if (!httpTarget.comment) {
                 httpTarget.comment = line.substr(2).trim();
             }
-        } else if ((line.startsWith("GET ") || line.startsWith("POST ")) && httpTarget.method === "") { // HTTP method & URL
+        } else if ((line.startsWith("GET ") || line.startsWith("POST ") || line.startsWith("PUT ") || line.startsWith("DELETE "))
+            && httpTarget.method === "") { // HTTP method & URL
             let parts = line.split(" ", 3); // format as 'POST URL HTTP/1.1'
             httpTarget.method = parts[0];
             httpTarget.url = parts[1].trim();
+            if (parts.length > 2) {
+                httpTarget.schema = parts[2];
+            }
         } else if (line.startsWith("  ")
             && (line.indexOf("  /") >= 0 || line.indexOf("  ?") >= 0 || line.indexOf("  &") >= 0)
             && httpTarget.headers === undefined) { // long request url into several lines
@@ -208,6 +219,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
         }
     }
     if (!httpTarget.isEmpty()) {
+        httpTarget.cleanBody();
         targets.push(httpTarget)
     }
     return targets;
