@@ -185,6 +185,8 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
         } else if (line.indexOf(":") > 0 && httpTarget.body === undefined && httpTarget.checker === undefined) { // http headers
             let parts = line.split(":", 2);
             httpTarget.addHeader(parts[0].trim(), parts[1].trim());
+        } else if (line.startsWith("<> ")) { //response-ref
+
         } else {
             if (!(line === "" && httpTarget.body === undefined)) {
                 if (line.startsWith("> {%")) { // indicate checker
