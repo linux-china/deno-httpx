@@ -257,7 +257,10 @@ function replaceVariables(text: string, context: { [name: string]: string }): st
             return newText;
         }
         let name = newText.substring(start + 2, end).trim();
-        let value = context[name] ?? "";
+        let value = context[name];
+        if (!value) {
+            value = localStorage.getItem(name) ?? "";
+        }
         newText = newText.substring(0, start) + value + newText.substring(end + 2);
     }
     return newText;
