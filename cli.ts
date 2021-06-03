@@ -34,6 +34,12 @@ function printTargets() {
     }
 }
 
+function printGlobals() {
+    for (const entry of Object.entries(localStorage)) {
+        console.log(`${entry[0]}: ${entry[1]}`);
+    }
+}
+
 async function generateShellCompletion(shell: string) {
     if (shell === "zsh") {
         console.log("#compdef dx\n" +
@@ -68,6 +74,12 @@ const command = new Command()
         standalone: true,
         action: () => {
             printTargets();
+        }
+    })
+    .option("-g, --globals", "List global key-values", {
+        standalone: true,
+        action: () => {
+            printGlobals();
         }
     })
     .option("-u, --upgrade", "Upgrade httpx to last version", {
