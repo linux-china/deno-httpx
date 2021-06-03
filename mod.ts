@@ -188,7 +188,11 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
         } else {
             if (!(line === "" && httpTarget.body === undefined)) {
                 if (line.startsWith("> {%")) { // indicate checker
-                    httpTarget.checker = "";
+                    let code = line.substring("> {%".length).trim();
+                    if (code.endsWith("%}")) {
+                        code = code.substring(0, code.length - 2);
+                    }
+                    httpTarget.checker = code;
                 } else if (line.startsWith("%}")) { // end of checker
 
                 } else {
