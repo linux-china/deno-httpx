@@ -31,7 +31,9 @@ GET https://httpbin.org/ip
 
 ### Execute http target
 
-Execute `httpx index.http getInternetIp` on the terminal
+Execute `httpx index.http getInternetIp` on the terminal.
+
+**Attention**: getInternetIp is a keyword, and httpx will search first keyword that appears in comment and url.
 
 ![httpx cli](./docs/httpx-cli.png)
 
