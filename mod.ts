@@ -199,9 +199,9 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
                 httpTarget.comment = comment;
             }
         } else if (line.startsWith("//") || line.startsWith("#")) { //comment
-            const tag = line.substring(1).trim();
-            if (tag.startsWith("@")) {
-                const parts = tag.substring(1).split(/[=\s]/, 2);
+            if (line.indexOf("@") >= 0) {
+                const tag = line.substring(line.indexOf("@") + 1);
+                const parts = tag.split(/[=\s]/, 2);
                 if (parts[0] === "name") {
                     httpTarget.name = parts[1];
                 }
