@@ -1,4 +1,3 @@
-import * as stdFs from "https://deno.land/std@0.122.0/fs/mod.ts";
 import {Command} from "https://deno.land/x/cliffy@v0.20.1/command/command.ts";
 import {findHttpTarget, parseTargets, runTarget} from "./mod.ts";
 
@@ -6,7 +5,12 @@ const httpFiles = ["index.http"]
 
 function detectHttpFile(): string | undefined {
     return httpFiles.filter(file => {
-        return stdFs.existsSync(file);
+        try {
+            Deno.lstatSync(file);
+            return true;
+        } catch (_err: unknown) {
+            return false
+        }
     })[0];
 }
 
@@ -69,7 +73,7 @@ function printGlobals() {
     }
 }
 
-async function generateShellCompletion(shell: string) {
+function generateShellCompletion(shell: string) {
     if (shell === "zsh") {
         console.log("#compdef dx\n" +
             "#autload\n" +
