@@ -2,7 +2,6 @@
 // deno-lint-ignore-file no-explicit-any
 
 import {readLines, StringReader} from "https://deno.land/std@0.122.0/io/mod.ts";
-import * as fs from "https://deno.land/std@0.122.0/fs/mod.ts";
 import {HttpClient, HttpResponse} from "./http-client.ts";
 import {assertEquals} from "https://deno.land/std@0.122.0/testing/asserts.ts";
 import * as base64 from "https://deno.land/std@0.122.0/encoding/base64.ts";
@@ -311,7 +310,7 @@ async function getCleanHttpFile(httpFile: string): Promise<string> {
     context["$timestamp"] = Date.now();
     context["$randomInt"] = Math.floor(Math.random() * 1001);
     // load http-client.env.json
-    if (fs.existsSync(httpClientEnvFile)) {
+    if (existsSync(httpClientEnvFile)) {
         const fileText = Deno.readTextFileSync(httpClientEnvFile);
         const json: any = JSON.parse(fileText);
         const keys = Object.keys(json);
@@ -325,7 +324,7 @@ async function getCleanHttpFile(httpFile: string): Promise<string> {
         }
     }
     // load http-client.private.env.json
-    if (fs.existsSync(httpClientPrivateEnvFile) && env !== undefined) {
+    if (existsSync(httpClientPrivateEnvFile) && env !== undefined) {
         const fileText = Deno.readTextFileSync(httpClientPrivateEnvFile);
         const json: any = JSON.parse(fileText);
         if (json[env]) {
@@ -385,3 +384,11 @@ function buildHttpResponse(res: Response): HttpResponse {
     };
 }
 
+function existsSync(filePath: string): boolean {
+    try {
+        Deno.lstatSync(filePath);
+        return true;
+    } catch (_err: unknown) {
+        return false
+    }
+}
