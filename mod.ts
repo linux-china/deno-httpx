@@ -13,7 +13,9 @@ const httpClientEnvFile = "http-client.env.json";
 const httpClientPrivateEnvFile = "http-client.private.env.json";
 
 export class HttpTarget {
+    name?: string
     comment?: string
+    tags?: string[]
     method: string
     url: string
     schema: string = "HTTP/1.1"
@@ -24,6 +26,13 @@ export class HttpTarget {
     constructor(method: string, url: string) {
         this.method = method;
         this.url = url;
+    }
+
+    addTag(tag: string) {
+        if (!this.tags) {
+            this.tags = [];
+        }
+        this.tags.push(tag);
     }
 
     addHeader(name: string, value: string) {
@@ -170,7 +179,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
         if (line === "" && httpTarget.isEmpty()) { // ignore empty line before http target
 
         } else if (line.startsWith("###")) { // separator
-            const comment = line.substr(3).trim();
+            const comment = line.substring(3).trim();
             if (httpTarget.isEmpty()) {
                 httpTarget.comment = comment;
             } else {
@@ -179,9 +188,16 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
                 httpTarget = new HttpTarget("", "");
                 httpTarget.comment = comment;
             }
-        } else if (line.startsWith("//")) { //comment
-            if (!httpTarget.comment) {
-                httpTarget.comment = line.substr(2).trim();
+        } else if (line.startsWith("//") || line.startsWith("#")) { //comment
+            const tag = line.substring(1).trim();
+            if (tag.startsWith("@")) {
+                const parts = tag.substring(1).split(/[=\s]/, 2);
+                if (parts[0] === "name") {
+                    httpTarget.name = parts[1];
+                }
+                httpTarget.addTag(tag);
+            } else if (!httpTarget.comment) {
+                httpTarget.comment = line.substring(2).trim();
             }
         } else if ((line.startsWith("GET ") || line.startsWith("POST ") || line.startsWith("PUT ") || line.startsWith("DELETE "))
             && httpTarget.method === "") { // HTTP method & URL
