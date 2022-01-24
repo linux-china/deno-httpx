@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-explicit-any
+
 import {Command} from "https://deno.land/x/cliffy@v0.20.1/command/command.ts";
 import {findHttpTarget, parseTargets, runTarget} from "./mod.ts";
 
@@ -100,7 +102,7 @@ function taskfileNotFound(httpFile: string) {
 
 const command = new Command()
     .name("httpx")
-    .version("0.1.0")
+    .version("0.3.0")
     .versionOption("-v, --version")
     .description("A tool to execute http file")
     .option("--summary", "List names of available targets in http file", {
