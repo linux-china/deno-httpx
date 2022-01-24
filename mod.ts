@@ -1,10 +1,10 @@
 /// <reference lib="esnext" />
-import {readLines, StringReader} from "https://deno.land/std@0.97.0/io/mod.ts";
-import * as fs from "https://deno.land/std@0.97.0/fs/mod.ts";
-import {v4} from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import {readLines, StringReader} from "https://deno.land/std@0.122.0/io/mod.ts";
+import * as fs from "https://deno.land/std@0.122.0/fs/mod.ts";
+import {v4} from "https://deno.land/std@0.122.0/uuid/mod.ts";
 import {HttpClient, HttpResponse} from "./http-client.ts";
-import {assertEquals} from "https://deno.land/std@0.97.0/testing/asserts.ts";
-import * as base64 from "https://deno.land/std@0.97.0/encoding/base64.ts";
+import {assertEquals} from "https://deno.land/std@0.122.0/testing/asserts.ts";
+import * as base64 from "https://deno.land/std@0.122.0/encoding/base64.ts";
 
 const LINE_TERMINATOR = "\r\n";
 const textEncoder = new TextEncoder();
@@ -66,7 +66,7 @@ export class HttpTarget {
 
     prepareBody() {
         if (!(this.url.startsWith("http://") || this.url.startsWith("https://"))) {
-            let httpSchema = this.schema.substring(0, this.schema.indexOf("/")).toLocaleLowerCase() + "://";
+            const httpSchema = this.schema.substring(0, this.schema.indexOf("/")).toLocaleLowerCase() + "://";
             this.url = httpSchema + this.headers?.get("Host") + this.url;
         }
         if (typeof this.body === "string") {
@@ -80,12 +80,12 @@ export class HttpTarget {
         }
         // basic Authorization conversation
         if (this.headers != null) {
-            let authorization = this.headers.get("Authorization");
+            const authorization = this.headers.get("Authorization");
             if (authorization && authorization.startsWith("Basic ")) {
-                let usernameAndPassword = authorization.substring(6).trim();
+                const usernameAndPassword = authorization.substring(6).trim();
                 if (usernameAndPassword.indexOf(" ") > 0) {
-                    let parts = usernameAndPassword.split(" ", 2);
-                    let encodedText = base64.encode(parts[0] + ":" + parts[1].trim());
+                    const parts = usernameAndPassword.split(" ", 2);
+                    const encodedText = base64.encode(parts[0] + ":" + parts[1].trim());
                     this.headers.set("Authorization", "Basic " + encodedText);
                 }
             }
@@ -107,7 +107,7 @@ export function runTarget(target: HttpTarget) {
             console.log(`${key}: ${value}`);
         })
     }
-    let scriptContext: { [name: string]: any } = {}
+    const scriptContext: { [name: string]: any } = {}
     fetch(target.url, {
         method: target.method, // or 'PUT'
         headers: target.headers,
@@ -152,7 +152,7 @@ export function runTarget(target: HttpTarget) {
     }).then(body => {
         if (target.script) {
             console.log("=============Tests==============")
-            let javaScriptCode = "export default function validate(client,response) {" + target.script + "};";
+            const javaScriptCode = "export default function validate(client,response) {" + target.script + "};";
             import("data:application/javascript;charset=utf-8;base64," + base64.encode(textEncoder.encode(javaScriptCode)))
                 .then(module => {
                     module['default'](scriptContext['client'], scriptContext['response'])
@@ -163,14 +163,14 @@ export function runTarget(target: HttpTarget) {
 
 export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
     const cleanContent = await getCleanHttpFile(filePath);
-    let targets: HttpTarget[] = [];
+    const targets: HttpTarget[] = [];
     let httpTarget = new HttpTarget("", "");
     for await (const l of readLines(new StringReader(cleanContent))) {
         const line = l.trimEnd() as string;
         if (line === "" && httpTarget.isEmpty()) { // ignore empty line before http target
 
         } else if (line.startsWith("###")) { // separator
-            let comment = line.substr(3).trim();
+            const comment = line.substr(3).trim();
             if (httpTarget.isEmpty()) {
                 httpTarget.comment = comment;
             } else {
@@ -185,7 +185,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
             }
         } else if ((line.startsWith("GET ") || line.startsWith("POST ") || line.startsWith("PUT ") || line.startsWith("DELETE "))
             && httpTarget.method === "") { // HTTP method & URL
-            let parts = line.split(" ", 3); // format as 'POST URL HTTP/1.1'
+            const parts = line.split(" ", 3); // format as 'POST URL HTTP/1.1'
             httpTarget.method = parts[0];
             httpTarget.url = parts[1].trim();
             if (parts.length > 2) {
@@ -196,7 +196,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
             && httpTarget.headers === undefined) { // long request url into several lines
             httpTarget.url = httpTarget.url + line.trim();
         } else if (line.indexOf(":") > 0 && httpTarget.body === undefined && httpTarget.script === undefined) { // http headers
-            let parts = line.split(":", 2);
+            const parts = line.split(":", 2);
             httpTarget.addHeader(parts[0].trim(), parts[1].trim());
         } else if (line.startsWith("<> ")) { //response-ref
 
@@ -230,7 +230,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
 }
 
 export async function findHttpTarget(httpFile: string, word?: string): Promise<HttpTarget | null> {
-    let targets = await parseTargets(httpFile);
+    const targets = await parseTargets(httpFile);
     if (word === undefined || word === "") {
         return targets[0];
     }
@@ -251,12 +251,12 @@ export async function findHttpTarget(httpFile: string, word?: string): Promise<H
 function replaceVariables(text: string, context: { [name: string]: string }): string {
     let newText = text;
     while (newText.indexOf("{{") >= 0) {
-        let start = newText.indexOf("{{");
-        let end = newText.indexOf("}}");
+        const start = newText.indexOf("{{");
+        const end = newText.indexOf("}}");
         if (end < start) {
             return newText;
         }
-        let name = newText.substring(start + 2, end).trim();
+        const name = newText.substring(start + 2, end).trim();
         let value = context[name];
         if (!value) {
             value = localStorage.getItem(name) ?? "";
@@ -272,15 +272,15 @@ function replaceVariables(text: string, context: { [name: string]: string }): st
  */
 async function getCleanHttpFile(httpFile: string): Promise<string> {
     let env = Deno.env.get("HTTP_CLIENT_ENV");
-    let context: { [name: string]: any } = {}
+    const context: { [name: string]: any } = {}
     context["$uuid"] = v4.generate();
     context["$timestamp"] = Date.now();
     context["$randomInt"] = Math.floor(Math.random() * 1001);
     // load http-client.env.json
     if (fs.existsSync(httpClientEnvFile)) {
-        let fileText = Deno.readTextFileSync(httpClientEnvFile);
-        let json: any = JSON.parse(fileText);
-        let keys = Object.keys(json);
+        const fileText = Deno.readTextFileSync(httpClientEnvFile);
+        const json: any = JSON.parse(fileText);
+        const keys = Object.keys(json);
         if (keys.length > 1) {
             if (env && json[env]) {
                 Object.assign(context, json[env]);
@@ -292,8 +292,8 @@ async function getCleanHttpFile(httpFile: string): Promise<string> {
     }
     // load http-client.private.env.json
     if (fs.existsSync(httpClientPrivateEnvFile) && env !== undefined) {
-        let fileText = Deno.readTextFileSync(httpClientPrivateEnvFile);
-        let json: any = JSON.parse(fileText);
+        const fileText = Deno.readTextFileSync(httpClientPrivateEnvFile);
+        const json: any = JSON.parse(fileText);
         if (json[env]) {
             Object.assign(context, json[env]);
         }
@@ -339,8 +339,8 @@ function buildHttpResponse(res: Response): HttpResponse {
             valueOf(headerName: string): string | null {
                 return res.headers.get(headerName);
             }, valuesOf(headerName: string): string[] {
-                let values: string[] = [];
-                let value = res.headers.get(headerName);
+                const values: string[] = [];
+                const value = res.headers.get(headerName);
                 if (value) {
                     values.push(value);
                 }
