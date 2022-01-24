@@ -13,6 +13,7 @@ const httpClientEnvFile = "http-client.env.json";
 const httpClientPrivateEnvFile = "http-client.private.env.json";
 
 export class HttpTarget {
+    index: number
     name?: string
     comment?: string
     tags?: string[]
@@ -23,9 +24,10 @@ export class HttpTarget {
     body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
     script?: string
 
-    constructor(method: string, url: string) {
+    constructor(method: string, url: string, index: number) {
         this.method = method;
         this.url = url;
+        this.index = index;
     }
 
     addTag(tag: string) {
@@ -178,7 +180,8 @@ export function runTarget(target: HttpTarget) {
 export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
     const cleanContent = await getCleanHttpFile(filePath);
     const targets: HttpTarget[] = [];
-    let httpTarget = new HttpTarget("", "");
+    let index = 1;
+    let httpTarget = new HttpTarget("", "", index);
     for await (const l of readLines(new StringReader(cleanContent))) {
         const line = l.trimEnd() as string;
         if (line === "" && httpTarget.isEmpty()) { // ignore empty line before http target
@@ -190,7 +193,8 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
             } else {
                 httpTarget.cleanBody();
                 targets.push(httpTarget);
-                httpTarget = new HttpTarget("", "");
+                index = index + 1;
+                httpTarget = new HttpTarget("", "", index);
                 httpTarget.comment = comment;
             }
         } else if (line.startsWith("//") || line.startsWith("#")) { //comment
