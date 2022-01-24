@@ -1,11 +1,12 @@
-// get ip
+# @name myip
 GET https://httpbin.org/ip
 
 > {%
     client.log("your ip: "+response.body['origin']);
 %}
 
-### get header
+### httpbin header test
+# @name headers
 GET https://httpbin.org/headers
 
 > {%
@@ -14,7 +15,8 @@ GET https://httpbin.org/headers
     });
 %}
 
-### post
+### httpbin post test
+# @name post
 POST https://httpbin.org/post
 Content-Type: application/json
 
