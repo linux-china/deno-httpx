@@ -1,3 +1,5 @@
+#!/usr/bin/env httpx
+
 ### get my internet ip
 # @name myip
 GET https://httpbin.org/ip
