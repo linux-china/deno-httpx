@@ -59,6 +59,9 @@ export class HttpTarget {
     }
 
     isMatch(word: string): boolean {
+        if (this.name && this.name === word) {
+            return true;
+        }
         if (this.comment && this.comment.indexOf(word) >= 0) {
             return true;
         }
@@ -109,7 +112,9 @@ export function runTarget(target: HttpTarget) {
     if (env) {
         env = " -- " + env;
     }
-    console.log(`### ${target.comment ?? ""} ${env ?? ""}`)
+    if (target.comment || env) {
+        console.log(`### ${target.comment ?? ""} ${env ?? ""}`)
+    }
     console.log(`${target.method} ${target.url}`);
     if (target.headers) {
         target.headers.forEach((value, key) => {
@@ -250,6 +255,13 @@ export async function findHttpTarget(httpFile: string, word?: string): Promise<H
     if (word === undefined || word === "") {
         return targets[0];
     }
+    // find by @name exactly
+    for (const target of targets) {
+        if (target.name && target.name === word) {
+            return target;
+        }
+    }
+    // wild match by comment and url
     for (const target of targets) {
         if (target.isMatch(word)) {
             return target;
