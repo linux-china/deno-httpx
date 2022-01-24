@@ -21,7 +21,8 @@ deno install -q --location https://deno.land/x/httpx --allow-net --allow-read --
 Create 'index.http' file with following code:
 
 ```
-### getInternetIp
+### get my internet ip
+# @name myip
 GET https://httpbin.org/ip
 
 > {%
@@ -31,9 +32,7 @@ GET https://httpbin.org/ip
 
 ### Execute http target
 
-Execute `httpx index.http getInternetIp` on the terminal.
-
-**Attention**: getInternetIp is a keyword, and httpx will search first keyword that appears in comment and url.
+Execute `httpx index.http myip` on the terminal.
 
 ![httpx cli](./docs/httpx-cli.png)
 
