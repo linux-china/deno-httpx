@@ -6,7 +6,7 @@ http file used by JetBrains IDE and VS Code REST Client for editor http client, 
 # Features
 
 * Execute requests in http file
-* Javascript validation support: ECMAScript 5.1 by JetBrains,  esnext support by httpx
+* Javascript validation support: ECMAScript 5.1 by JetBrains, esnext support by httpx
 
 # Get started
 
@@ -35,6 +35,39 @@ GET https://httpbin.org/ip
 Execute `httpx index.http myip` on the terminal.
 
 ![httpx cli](./docs/httpx-cli.png)
+
+# oh-my-zsh integration for shell completion
+
+Please create `~/.oh-my-zsh/custom/plugins/httpx` with following code, and add `httpx` to `plugins` in `.zshrc` file.
+
+```shell
+#compdef index.http
+#autload
+
+local subcmds=()
+
+while read -r line ; do
+   if [[ ! $line == Available* ]] ;
+   then
+      subcmds+=(${line/[[:space:]]*\#/:})
+   fi
+done < <(httpx --summary)
+
+_describe 'command' subcmds
+```
+
+Add shebang for index.http and execute `chmod u+x index.http`
+
+```http request
+#!/usr/bin/env httpx
+
+### get my internet ip
+# @name myip
+GET https://httpbin.org/ip
+
+```
+
+Then execute `./index.http ` and press Tab for code completion.
 
 # References
 
