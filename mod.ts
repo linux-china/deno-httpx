@@ -1,7 +1,8 @@
 /// <reference lib="esnext" />
+// deno-lint-ignore-file no-explicit-any
+
 import {readLines, StringReader} from "https://deno.land/std@0.122.0/io/mod.ts";
 import * as fs from "https://deno.land/std@0.122.0/fs/mod.ts";
-import {v4} from "https://deno.land/std@0.122.0/uuid/mod.ts";
 import {HttpClient, HttpResponse} from "./http-client.ts";
 import {assertEquals} from "https://deno.land/std@0.122.0/testing/asserts.ts";
 import * as base64 from "https://deno.land/std@0.122.0/encoding/base64.ts";
@@ -19,7 +20,7 @@ export class HttpTarget {
     tags?: string[]
     method: string
     url: string
-    schema: string = "HTTP/1.1"
+    schema: string
     headers?: Headers
     body?: Blob | BufferSource | FormData | URLSearchParams | ReadableStream<Uint8Array> | string
     script?: string
@@ -28,6 +29,7 @@ export class HttpTarget {
         this.method = method;
         this.url = url;
         this.index = index;
+        this.schema = "HTTP/1.1"
     }
 
     addTag(tag: string) {
@@ -73,7 +75,7 @@ export class HttpTarget {
     cleanBody() {
         if (typeof this.body === "string") {
             if (this.body && this.body.endsWith(LINE_TERMINATOR)) {
-                this.body = this.body.substr(0, this.body.length - 2)
+                this.body = this.body.substring(0, this.body.length - 2)
             }
         }
     }
@@ -86,11 +88,11 @@ export class HttpTarget {
         if (typeof this.body === "string") {
             // load body from file
             if (this.body.startsWith("< ")) { // import content from file
-                this.body = Deno.readFileSync(this.body.substr(2).trim());
+                this.body = Deno.readFileSync(this.body.substring(2).trim());
             }
         }
         if (this.script && this.script.startsWith("> ")) {
-            this.script = Deno.readTextFileSync(this.script.substr(2).trim());
+            this.script = Deno.readTextFileSync(this.script.substring(2).trim());
         }
         // basic Authorization conversation
         if (this.headers != null) {
@@ -165,7 +167,7 @@ export function runTarget(target: HttpTarget) {
             console.log(new Uint8Array(body));
         }
         return body;
-    }).then(body => {
+    }).then(_body => {
         if (target.script) {
             console.log("=============Tests==============")
             const javaScriptCode = "export default function validate(client,response) {" + target.script + "};";
@@ -305,7 +307,7 @@ function replaceVariables(text: string, context: { [name: string]: string }): st
 async function getCleanHttpFile(httpFile: string): Promise<string> {
     let env = Deno.env.get("HTTP_CLIENT_ENV");
     const context: { [name: string]: any } = {}
-    context["$uuid"] = v4.generate();
+    context["$uuid"] = crypto.randomUUID();
     context["$timestamp"] = Date.now();
     context["$randomInt"] = Math.floor(Math.random() * 1001);
     // load http-client.env.json
@@ -334,7 +336,7 @@ async function getCleanHttpFile(httpFile: string): Promise<string> {
     return replaceVariables(fileContent, context);
 }
 
-function buildHttpClient(httpTarget: HttpTarget): HttpClient {
+function buildHttpClient(_httpTarget: HttpTarget): HttpClient {
     return {
         global: {
             clear(varName: string): void {
@@ -349,7 +351,7 @@ function buildHttpClient(httpTarget: HttpTarget): HttpClient {
                 localStorage.setItem(varName, varValue)
             }
         },
-        test(testName: string, func: Function) {
+        test(testName: string, func: () => void) {
             console.log(`===========test: ${testName}================`);
             func();
         }, assert(condition: boolean, message?: string): void {
