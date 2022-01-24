@@ -185,7 +185,7 @@ export async function parseTargets(filePath: string): Promise<HttpTarget[]> {
     let httpTarget = new HttpTarget("", "", index);
     for await (const l of readLines(new StringReader(cleanContent))) {
         const line = l.trimEnd() as string;
-        if (line === "" && httpTarget.isEmpty()) { // ignore empty line before http target
+        if ((line === "" || line.startsWith("#!/usr/bin/env")) && httpTarget.isEmpty()) { // ignore empty line or shebang before http target
 
         } else if (line.startsWith("###")) { // separator
             const comment = line.substring(3).trim();
