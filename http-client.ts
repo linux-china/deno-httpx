@@ -19,7 +19,7 @@ export interface HttpClient {
      * Creates test with name 'testName' and body 'func'.
      * All tests will be executed right after response handler script.
      */
-    test (testName: string, func: Function): void;
+    test(testName: string, func: () => void): void;
 
     /**
      * Checks that condition is true and throw an exception otherwise.
@@ -72,7 +72,7 @@ export interface HttpResponse {
     /**
      * Response content, it is a string or JSON object if response content-type is json.
      */
-    body: string|object;
+    body: string | object;
 
     /**
      * Response headers storage.
