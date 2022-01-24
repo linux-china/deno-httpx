@@ -1,5 +1,5 @@
-import * as stdFs from "https://deno.land/std@0.97.0/fs/mod.ts";
-import {Command} from "https://deno.land/x/cliffy@v0.19.0/command/command.ts";
+import * as stdFs from "https://deno.land/std@0.122.0/fs/mod.ts";
+import {Command} from "https://deno.land/x/cliffy@v0.20.1/command/command.ts";
 import {findHttpTarget, parseTargets, runTarget} from "./mod.ts";
 
 const httpFiles = ["index.http"]
@@ -11,7 +11,7 @@ function detectHttpFile(): string | undefined {
 }
 
 async function runHttpFile(httpFile: string, ...targets: Array<string>) {
-    let target = targets ? targets[0] : "";
+    const target = targets ? targets[0] : "";
     const httpTarget = await findHttpTarget(httpFile, target);
     if (httpTarget) {
         runTarget(httpTarget);
@@ -21,14 +21,43 @@ async function runHttpFile(httpFile: string, ...targets: Array<string>) {
 }
 
 function printTargets() {
-    let taskfile = detectHttpFile();
+    const taskfile = detectHttpFile();
     if (taskfile) {
         parseTargets(taskfile).then(targets => {
             for (const target of targets) {
-                console.log(`${target.comment} - ${target.url}`)
+                if (target.name) {
+                    console.log(`${target.index}. ${target.name}: ${target.comment} - ${target.url}`)
+                } else {
+                    console.log(`${target.index}. ${target.comment} - ${target.url}`)
+                }
             }
         })
+    } else {
+        taskfileNotFound(taskfile ?? "index.http");
+    }
+}
 
+
+function printSummary() {
+    const taskfile = detectHttpFile();
+    if (taskfile) {
+        parseTargets(taskfile).then(targets => {
+            for (const target of targets) {
+                if (target.comment) {
+                    if (target.name) {
+                        console.log(`${target.name} # ${target.comment}`)
+                    } else {
+                        console.log(`${target.index} # ${target.comment}`)
+                    }
+                } else {
+                    if (target.name) {
+                        console.log(`${target.name}`)
+                    } else {
+                        console.log(`${target.index}`)
+                    }
+                }
+            }
+        })
     } else {
         taskfileNotFound(taskfile ?? "index.http");
     }
@@ -52,7 +81,7 @@ async function generateShellCompletion(shell: string) {
             "   then\n" +
             "      subcmds+=(${line/[[:space:]]*\\#/:})\n" +
             "   fi\n" +
-            "done < <(dx --tasks)\n" +
+            "done < <(dx --summary)\n" +
             "\n" +
             "_describe 'command' subcmds")
     } else {
@@ -70,6 +99,12 @@ const command = new Command()
     .version("0.1.0")
     .versionOption("-v, --version")
     .description("A tool to execute http file")
+    .option("--summary", "List names of available targets in http file", {
+        standalone: true,
+        action: () => {
+            printSummary();
+        }
+    })
     .option("-t, --targets", "List targets in index.http", {
         standalone: true,
         action: () => {
@@ -103,7 +138,7 @@ const command = new Command()
     .arguments("[script:string] [args...:string]")
     .action(async (options: any, script: string | undefined, args: string[] | undefined) => {
         // set http client env
-        let env = options['env'];
+        const env = options['env'];
         if (env) {
             Deno.env.set("HTTP_CLIENT_ENV", env);
         }
@@ -123,7 +158,7 @@ const command = new Command()
                     await runHttpFile(script);
                 }
             } else { // run targets
-                let httpFile = detectHttpFile();
+                const httpFile = detectHttpFile();
                 if (httpFile) {
                     //script is task name now
                     const targets = args ? [script, ...args] : [script];
