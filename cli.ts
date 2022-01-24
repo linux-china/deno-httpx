@@ -22,14 +22,28 @@ async function runHttpFile(httpFile: string, ...targets: Array<string>) {
     if (httpTarget) {
         runTarget(httpTarget);
     } else {
-        taskfileNotFound(httpFile);
+        httpFileNotFound(httpFile);
     }
 }
 
+function getHttpFileFromDenoArgs(): string | undefined {
+    if (Deno.args.length > 1) {
+        if (Deno.args[0].endsWith(".http")) {
+            return Deno.args[0];
+        } else if (Deno.args[1].endsWith(".http")) {
+            return Deno.args[1]
+        }
+    }
+    return undefined;
+}
+
 function printTargets() {
-    const taskfile = detectHttpFile();
-    if (taskfile) {
-        parseTargets(taskfile).then(targets => {
+    let httpFile = getHttpFileFromDenoArgs();
+    if (!httpFile) {
+        httpFile = detectHttpFile();
+    }
+    if (httpFile) {
+        parseTargets(httpFile).then(targets => {
             for (const target of targets) {
                 if (target.name) {
                     console.log(`${target.index}. ${target.name}: ${target.comment} - ${target.url}`)
@@ -39,15 +53,18 @@ function printTargets() {
             }
         })
     } else {
-        taskfileNotFound(taskfile ?? "index.http");
+        httpFileNotFound(httpFile ?? "index.http");
     }
 }
 
 
 function printSummary() {
-    const taskfile = detectHttpFile();
-    if (taskfile) {
-        parseTargets(taskfile).then(targets => {
+    let httpFile = getHttpFileFromDenoArgs();
+    if (!httpFile) {
+        httpFile = detectHttpFile();
+    }
+    if (httpFile) {
+        parseTargets(httpFile).then(targets => {
             for (const target of targets) {
                 if (target.comment) {
                     if (target.name) {
@@ -65,7 +82,7 @@ function printSummary() {
             }
         })
     } else {
-        taskfileNotFound(taskfile ?? "index.http");
+        httpFileNotFound(httpFile ?? "index.http");
     }
 }
 
@@ -95,7 +112,7 @@ function generateShellCompletion(shell: string) {
     }
 }
 
-function taskfileNotFound(httpFile: string) {
+function httpFileNotFound(httpFile: string) {
     console.log(`Failed to find '${httpFile}' `);
     Deno.exit(2);
 }
@@ -170,7 +187,7 @@ const command = new Command()
                     const targets = args ? [script, ...args] : [script];
                     await runHttpFile(httpFile, ...targets);
                 } else {
-                    taskfileNotFound("index.http");
+                    httpFileNotFound("index.http");
                 }
             }
         }
