@@ -94,7 +94,7 @@ function printGlobals() {
 
 function generateShellCompletion(shell: string) {
     if (shell === "zsh") {
-        console.log("#compdef dx\n" +
+        console.log("#compdef index.http\n" +
             "#autload\n" +
             "\n" +
             "local subcmds=()\n" +
@@ -104,7 +104,7 @@ function generateShellCompletion(shell: string) {
             "   then\n" +
             "      subcmds+=(${line/[[:space:]]*\\#/:})\n" +
             "   fi\n" +
-            "done < <(dx --summary)\n" +
+            "done < <(httpx --summary)\n" +
             "\n" +
             "_describe 'command' subcmds")
     } else {
@@ -119,7 +119,7 @@ function httpFileNotFound(httpFile: string) {
 
 const command = new Command()
     .name("httpx")
-    .version("0.3.0")
+    .version("0.4.0")
     .versionOption("-v, --version")
     .description("A tool to execute http file")
     .option("--summary", "List names of available targets in http file", {
