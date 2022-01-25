@@ -21,6 +21,8 @@ deno install -q --location https://deno.land/x/httpx --allow-net --allow-read --
 Create 'index.http' file with following code:
 
 ```
+#!/usr/bin/env httpx
+
 ### get my internet ip
 # @name myip
 GET https://httpbin.org/ip
@@ -58,7 +60,7 @@ _describe 'command' subcmds
 
 Add shebang for index.http and execute `chmod u+x index.http`
 
-```http request
+```
 #!/usr/bin/env httpx
 
 ### get my internet ip
